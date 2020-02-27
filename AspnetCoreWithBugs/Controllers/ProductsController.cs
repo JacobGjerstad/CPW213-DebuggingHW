@@ -2,6 +2,8 @@
 using AspnetCoreWithBugs.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -17,9 +19,29 @@ namespace AspnetCoreWithBugs.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? page)
         {
-            return View(await _context.Product.ToListAsync());
+            const int PageSize = 2;
+
+            int pageNumber = page ?? 1;
+            ViewData["CurrentPage"] = pageNumber;
+
+            int maxPage = await GetMaxPage(PageSize);
+
+            ViewData["MaxPage"] = maxPage;
+
+            List<Product> products = await ProductDb.GetProductByPage(_context, pageNum: pageNumber, pageSize: PageSize);
+
+            return View(products);
+        }
+
+        private async Task<int> GetMaxPage(int PageSize)
+        {
+            int numProducts = await ProductDb.GetNumProduct(_context);
+
+            int maxPage = Convert.ToInt32(Math.Ceiling((double)numProducts / PageSize));
+
+            return maxPage;
         }
 
         [HttpGet]
